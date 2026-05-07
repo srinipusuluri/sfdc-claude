@@ -1,0 +1,12 @@
+{
+  "_comment": "GitHub MCP server — exposes repo, issue, PR, and code-search tools. Token needs repo + read:org scopes.",
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PAT}"
+      }
+    }
+  }
+}

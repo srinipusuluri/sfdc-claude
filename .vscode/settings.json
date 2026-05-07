@@ -1,0 +1,13 @@
+{
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/.sf": true,
+    "**/.sfdx": true
+  },
+  "salesforcedx-vscode-core.show-cli-success-msg": false,
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#2f53a8",
+    "activityBar.background": "#2f53a8"
+  }
+}

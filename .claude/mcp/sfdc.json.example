@@ -1,0 +1,14 @@
+{
+  "_comment": "Community Salesforce MCP server. Exposes SOQL, describe, anonymous-Apex, and deploy tools. Replace with real package name once you pick one (e.g. @salesforce-community/mcp-server, salesforce-mcp, etc.) — verify before installing.",
+  "mcpServers": {
+    "sfdc": {
+      "command": "npx",
+      "args": ["-y", "@example/salesforce-mcp"],
+      "env": {
+        "SF_TARGET_ORG": "${SF_TARGET_ORG}",
+        "SF_INSTANCE_URL": "${SF_INSTANCE_URL}",
+        "SF_ACCESS_TOKEN": "${SF_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

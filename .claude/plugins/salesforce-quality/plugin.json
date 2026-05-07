@@ -1,0 +1,35 @@
+{
+  "name": "salesforce-quality",
+  "version": "0.1.0",
+  "description": "Static analysis, lint, format, and security review for Salesforce projects",
+  "agents": [
+    "security-reviewer",
+    "pmd-analyst",
+    "test-engineer",
+    "org-auditor"
+  ],
+  "skills": [
+    "pmd-scan",
+    "code-analyzer",
+    "eslint-lint",
+    "prettier-format",
+    "lwc-jest"
+  ],
+  "commands": [
+    "security-review",
+    "pmd-scan",
+    "code-analyzer",
+    "lint-fix",
+    "lwc-test",
+    "run-tests"
+  ],
+  "hooks": [
+    "pre-deploy-pmd",
+    "post-edit-pmd-quick",
+    "post-edit-format"
+  ],
+  "tools": [
+    "pmd-run.sh",
+    "scanner-summary.sh"
+  ]
+}

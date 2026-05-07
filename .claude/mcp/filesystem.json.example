@@ -1,0 +1,14 @@
+{
+  "_comment": "Filesystem MCP — sandboxed reads beyond the working directory. Useful for browsing shared design docs or other repos without leaving Claude Code.",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/srinip/cl2",
+        "/Users/srinip/Documents/sfdc-design-docs"
+      ]
+    }
+  }
+}

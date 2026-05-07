@@ -1,0 +1,20 @@
+{
+  "name": "salesforce-design",
+  "version": "0.1.0",
+  "description": "UX design, accessibility, solution architecture, and technical governance for Salesforce projects",
+  "agents": [
+    "ux-designer",
+    "solution-architect",
+    "lwc-developer",
+    "flow-architect"
+  ],
+  "skills": [],
+  "commands": [
+    "designer-review",
+    "architect-review"
+  ],
+  "hooks": [
+    "post-edit-format"
+  ],
+  "tools": []
+}

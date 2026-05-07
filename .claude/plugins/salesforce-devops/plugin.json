@@ -1,0 +1,27 @@
+{
+  "name": "salesforce-devops",
+  "version": "0.1.0",
+  "description": "Scratch orgs, source tracking, packaging, and release management for Salesforce projects",
+  "agents": [
+    "devops-engineer",
+    "integration-specialist",
+    "release-manager"
+  ],
+  "skills": [
+    "sfdx-deploy",
+    "anonymous-apex",
+    "soql-query",
+    "debug-log"
+  ],
+  "commands": [
+    "org-diff",
+    "create-apex-class"
+  ],
+  "hooks": [
+    "pre-deploy-check",
+    "stop-summary"
+  ],
+  "tools": [
+    "scratch-org-rotate.sh"
+  ]
+}

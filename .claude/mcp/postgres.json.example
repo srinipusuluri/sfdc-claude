@@ -1,0 +1,12 @@
+{
+  "_comment": "Postgres MCP — connect to a reporting DB (e.g. CDC sink mirroring Salesforce objects). Read-only role recommended.",
+  "mcpServers": {
+    "reporting-db": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "${REPORTING_DB_URL}"],
+      "env": {
+        "REPORTING_DB_URL": "${REPORTING_DB_URL}"
+      }
+    }
+  }
+}
