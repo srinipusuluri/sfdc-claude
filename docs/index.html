@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salesforce × Claude — The Complete Blueprint</title>
+<style>
+:root{
+  --sf-blue:#0176D3;--sf-dark:#032D60;--sf-sky:#1B96FF;--sf-teal:#06A59A;
+  --cl-purple:#7B5EA7;--cl-violet:#5436DA;--cl-lilac:#EEEDFE;
+  --gold:#FFB75E;--coral:#FF6B6B;--green:#06A59A;--pink:#FF6EC7;
+  --bg:#06101E;--surface:#0D1B2E;--card:#112038;--border:#1E3A5F;
+  --text:#E8F4FF;--muted:#7AAFDD;--dim:#3A6A9A;
+  --r:12px;--r-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.6;overflow-x:hidden}
+
+/* ── HERO ── */
+.hero{position:relative;text-align:center;padding:64px 24px 48px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,#1B3A6B 0%,transparent 70%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(27,150,255,.12);border:1px solid rgba(27,150,255,.3);border-radius:30px;padding:6px 16px;font-size:12px;color:var(--sf-sky);margin-bottom:24px;letter-spacing:.05em}
+.hero h1{font-size:clamp(28px,5vw,52px);font-weight:800;line-height:1.1;margin-bottom:16px}
+.hero h1 .sf{color:var(--sf-sky)}
+.hero h1 .cl{color:var(--cl-purple)}
+.hero p{color:var(--muted);max-width:560px;margin:0 auto 32px;font-size:15px}
+.hero-stats{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-num{font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--sf-sky),var(--cl-purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── NAV PILLS ── */
+.nav{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:16px 24px 0;position:sticky;top:0;z-index:100;background:rgba(6,16,30,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav a{padding:6px 14px;border-radius:30px;font-size:12px;font-weight:500;text-decoration:none;color:var(--muted);border:1px solid var(--border);transition:all .2s}
+.nav a:hover{color:var(--text);border-color:var(--sf-sky);background:rgba(27,150,255,.1)}
+
+/* ── SECTION ── */
+section{padding:48px 24px;max-width:1200px;margin:0 auto}
+.sec-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.sec-title{font-size:clamp(20px,3vw,30px);font-weight:700;margin-bottom:8px}
+.sec-sub{color:var(--muted);margin-bottom:32px;max-width:640px;font-size:14px}
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0}
+
+/* ── CARDS ── */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;transition:all .25s}
+.card:hover{border-color:var(--sf-sky);transform:translateY(-2px)}
+.card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:14px}
+.card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.card p{font-size:13px;color:var(--muted);line-height:1.6}
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:10px;letter-spacing:.04em}
+
+/* ── CODE BLOCK ── */
+.code{background:#071428;border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;font-family:'SF Mono','Cascadia Code',monospace;font-size:12px;line-height:1.8;overflow-x:auto;position:relative}
+.code .c-dir{color:#1B96FF}
+.code .c-file{color:#E8F4FF}
+.code .c-comment{color:#3A6A9A}
+.code .c-key{color:#FFB75E}
+.code .c-val{color:#06A59A}
+.code .c-str{color:#FF6EC7}
+.code .c-tag{color:#7B5EA7}
+
+/* ── FLOW DIAGRAM ── */
+.flow-wrap{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;margin:24px 0}
+.flow-node{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 16px;font-size:12px;font-weight:600;text-align:center;min-width:110px}
+.flow-arrow{color:var(--dim);font-size:20px;padding:0 4px;flex-shrink:0}
+.flow-node.active{border-color:var(--sf-sky);background:rgba(27,150,255,.1);color:var(--sf-sky)}
+.flow-node.purple{border-color:var(--cl-purple);background:rgba(123,94,167,.1);color:#B49FE8}
+.flow-node.teal{border-color:var(--green);background:rgba(6,165,154,.1);color:#5DCAA5}
+.flow-node.gold{border-color:var(--gold);background:rgba(255,183,94,.1);color:var(--gold)}
+.flow-node.coral{border-color:var(--coral);background:rgba(255,107,107,.1);color:var(--coral)}
+
+/* ── FOLDER TREE ── */
+.tree{background:#071428;border:1px solid var(--border);border-radius:var(--r);padding:20px;font-family:'SF Mono','Cascadia Code',monospace;font-size:12.5px;line-height:2.1}
+
+/* ── HOOK TABLE ── */
+.hook-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:16px}
+.hook-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px}
+.hook-card .hname{font-family:'SF Mono','Cascadia Code',monospace;font-size:12px;font-weight:600;margin-bottom:4px}
+.hook-card .hdesc{font-size:11.5px;color:var(--muted);line-height:1.5}
+.hook-card .htag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;margin-top:6px;display:inline-block;letter-spacing:.06em}
+.can-block{background:rgba(255,107,107,.15);color:#FF6B6B;border:1px solid rgba(255,107,107,.3)}
+.reactive{background:rgba(6,165,154,.15);color:#5DCAA5;border:1px solid rgba(6,165,154,.3)}
+.notify{background:rgba(255,183,94,.15);color:var(--gold);border:1px solid rgba(255,183,94,.3)}
+.subagent{background:rgba(123,94,167,.15);color:#B49FE8;border:1px solid rgba(123,94,167,.3)}
+
+/* ── BIG TABLE ── */
+.table-wrap{overflow-x:auto;margin-top:16px}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{background:#0D1B2E;padding:10px 12px;text-align:left;font-weight:600;color:var(--sf-sky);border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid rgba(30,58,95,.5);color:var(--muted);vertical-align:top}
+tr:hover td{background:rgba(27,150,255,.04)}
+td:first-child{color:var(--text);font-weight:500}
+.yes{color:#5DCAA5;font-weight:700}
+.no{color:var(--dim)}
+
+/* ── SCENARIO CARDS ── */
+.scenario{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;margin-bottom:16px}
+.scenario-num{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.scenario h3{font-size:17px;font-weight:700;margin-bottom:12px}
+.scenario .steps{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.step{display:flex;gap:10px;align-items:flex-start}
+.step-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;color:var(--muted);flex:1;padding-top:2px}
+.step-text strong{color:var(--text)}
+
+/* ── ARCH DIAGRAM ── */
+.arch{display:grid;grid-template-columns:1fr 80px 1fr;align-items:center;gap:0;margin:32px 0}
+.arch-col{display:flex;flex-direction:column;gap:10px}
+.arch-mid{display:flex;flex-direction:column;align-items:center;gap:6px}
+.arch-arrow{color:var(--sf-sky);font-size:22px;text-align:center}
+.arch-label{font-size:10px;color:var(--dim);text-align:center;writing-mode:vertical-rl;text-orientation:mixed}
+.arch-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-size:12px}
+.arch-box strong{color:var(--text);display:block;font-size:13px;margin-bottom:2px}
+.arch-box span{color:var(--muted)}
+
+/* ── COLORS ── */
+.c-sf{color:var(--sf-sky)}.c-cl{color:#B49FE8}.c-teal{color:#5DCAA5}.c-gold{color:var(--gold)}.c-coral{color:var(--coral)}.c-pink{color:var(--pink)}.c-green{color:#5DCAA5}
+.bg-sf{background:rgba(27,150,255,.12);border-color:rgba(27,150,255,.3);color:var(--sf-sky)}
+.bg-cl{background:rgba(123,94,167,.12);border-color:rgba(123,94,167,.3);color:#B49FE8}
+.bg-teal{background:rgba(6,165,154,.12);border-color:rgba(6,165,154,.3);color:#5DCAA5}
+.bg-gold{background:rgba(255,183,94,.12);border-color:rgba(255,183,94,.3);color:var(--gold)}
+.bg-coral{background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.3);color:var(--coral)}
+.bg-pink{background:rgba(255,110,199,.12);border-color:rgba(255,110,199,.3);color:var(--pink)}
+.bg-gray{background:rgba(58,106,154,.12);border-color:rgba(58,106,154,.3);color:#7AAFDD}
+.bg-green{background:rgba(6,165,154,.12);border-color:rgba(6,165,154,.3);color:#5DCAA5}
+
+/* ── GLOW ACCENTS ── */
+.glow-sf{box-shadow:0 0 24px rgba(27,150,255,.15)}
+.glow-cl{box-shadow:0 0 24px rgba(123,94,167,.15)}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px 24px;color:var(--dim);font-size:12px;border-top:1px solid var(--border)}
+footer a{color:var(--muted);text-decoration:none}
+
+@media(max-width:600px){
+  .arch{grid-template-columns:1fr;}.arch-mid{flex-direction:row;writing-mode:horizontal-tb}
+  .flow-wrap{gap:4px}.flow-arrow{font-size:16px}
+  .hero-stats{gap:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HERO ══════════════ -->
+<div class="hero">
+  <div class="hero-badge">⚡ Claude Code × Salesforce DX — Complete Blueprint</div>
+  <h1><span class="sf">Salesforce</span> × <span class="cl">Claude</span><br>The Agentic Developer Stack</h1>
+  <p>Everything you need to build an autonomous, AI-powered Salesforce development environment using Claude Code's full capability stack.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">Core Concepts</div></div>
+    <div class="stat"><div class="stat-num">10+</div><div class="stat-label">Hook Events</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Automation</div></div>
+    <div class="stat"><div class="stat-num">0</div><div class="stat-label">Repetition</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ NAV ══════════════ -->
+<nav class="nav">
+  <a href="#overview">Overview</a>
+  <a href="#folder">Folder</a>
+  <a href="#memory">Memory</a>
+  <a href="#tools">Tools</a>
+  <a href="#commands">Commands</a>
+  <a href="#skills">Skills</a>
+  <a href="#agents">Agents</a>
+  <a href="#hooks">Hooks</a>
+  <a href="#mcp">MCP</a>
+  <a href="#settings">Settings</a>
+  <a href="#plugins">Plugins</a>
+  <a href="#scenarios">Scenarios</a>
+</nav>
+
+<div class="divider"></div>
+
+<!-- ══════════════ OVERVIEW ══════════════ -->
+<section id="overview">
+  <div class="sec-label c-sf">Architecture Overview</div>
+  <div class="sec-title">How the layers work together</div>
+  <div class="sec-sub">Claude Code reads your project configuration at startup and layers each component — from always-on memory to event-driven hooks — to build a fully automated Salesforce development pipeline.</div>
+
+  <div class="flow-wrap">
+    <div class="flow-node purple">CLAUDE.md<br><small style="font-weight:400;color:var(--muted)">Memory</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">Tools<br><small style="font-weight:400">Built-in</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node gold">Commands<br><small style="font-weight:400">/slash</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node coral">Skills<br><small style="font-weight:400">Auto-load</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node teal">Agents<br><small style="font-weight:400">Subagents</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node" style="border-color:#FF6B6B;background:rgba(255,107,107,.1);color:#FF6B6B">Hooks<br><small style="font-weight:400">Enforced</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">MCP<br><small style="font-weight:400">External</small></div>
+  </div>
+
+  <div class="grid g3" style="margin-top:8px">
+    <div class="card" style="border-color:rgba(123,94,167,.4)">
+      <div class="card-icon" style="background:rgba(123,94,167,.2)">📋</div>
+      <h3 class="c-cl">Advisory Layer</h3>
+      <p>CLAUDE.md, rules/, skills — give Claude context and guidance. Claude reads these and applies them intelligently. Can be forgotten under heavy context load.</p>
+      <span class="badge" style="background:rgba(123,94,167,.15);color:#B49FE8;border:1px solid rgba(123,94,167,.3)">CLAUDE.md · rules/ · skills/</span>
+    </div>
+    <div class="card" style="border-color:rgba(255,107,107,.4)">
+      <div class="card-icon" style="background:rgba(255,107,107,.2)">🛡️</div>
+      <h3 class="c-coral">Enforcement Layer</h3>
+      <p>Hooks and settings.json — deterministic gates that fire on lifecycle events. The model CANNOT skip these. Exit code 2 blocks any action, always.</p>
+      <span class="badge" style="background:rgba(255,107,107,.15);color:#FF6B6B;border:1px solid rgba(255,107,107,.3)">hooks/ · settings.json</span>
+    </div>
+    <div class="card" style="border-color:rgba(27,150,255,.4)">
+      <div class="card-icon" style="background:rgba(27,150,255,.2)">🔌</div>
+      <h3 class="c-sf">Integration Layer</h3>
+      <p>MCP servers connect Claude to your live Salesforce org, GitHub, JIRA, and any external API — giving it real-time data and action capabilities.</p>
+      <span class="badge" style="background:rgba(27,150,255,.15);color:var(--sf-sky);border:1px solid rgba(27,150,255,.3)">.mcp.json · MCP servers</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ FOLDER ══════════════ -->
+<section id="folder">
+  <div class="sec-label c-sf">Project Structure</div>
+  <div class="sec-title">Complete .claude/ folder map</div>
+  <div class="sec-sub">Two locations matter: your project's <code style="color:var(--sf-sky)">.claude/</code> (committed to git, shared with team) and <code style="color:var(--sf-sky)">~/.claude/</code> (personal, never committed).</div>
+
+  <div class="grid g2">
+    <div class="tree">
+<span style="color:var(--sf-sky);font-weight:600">my-salesforce-project/</span>
+├── <span style="color:#E8F4FF">CLAUDE.md</span>  <span style="color:#3A6A9A">← project brain</span>
+├── <span style="color:#E8F4FF">.mcp.json</span>  <span style="color:#3A6A9A">← MCP servers (git commit)</span>
+└── <span style="color:var(--sf-sky);font-weight:600">.claude/</span>
+    ├── <span style="color:#E8F4FF">CLAUDE.md</span>  <span style="color:#3A6A9A">← alt location</span>
+    ├── <span style="color:#E8F4FF">settings.json</span>  <span style="color:#3A6A9A">← permissions</span>
+    ├── <span style="color:#E8F4FF">settings.local.json</span>  <span style="color:#3A6A9A">← gitignored</span>
+    ├── <span style="color:#FFB75E">rules/</span>
+    │   ├── <span style="color:#E8F4FF">apex.md</span>  <span style="color:#3A6A9A">← for *.cls</span>
+    │   ├── <span style="color:#E8F4FF">lwc.md</span>   <span style="color:#3A6A9A">← for *.html/js</span>
+    │   └── <span style="color:#E8F4FF">flows.md</span>  <span style="color:#3A6A9A">← for Flow XML</span>
+    ├── <span style="color:#FFB75E">commands/</span>  <span style="color:#3A6A9A">← /slash triggers</span>
+    │   ├── <span style="color:#E8F4FF">deploy.md</span>
+    │   ├── <span style="color:#E8F4FF">run-tests.md</span>
+    │   └── <span style="color:#E8F4FF">soql.md</span>
+    ├── <span style="color:#FF6EC7">skills/</span>  <span style="color:#3A6A9A">← auto-expertise</span>
+    │   ├── <span style="color:var(--sf-sky)">apex-best-practices/</span>
+    │   │   ├── <span style="color:#E8F4FF">SKILL.md</span>
+    │   │   └── <span style="color:#E8F4FF">reference.md</span>
+    │   └── <span style="color:var(--sf-sky)">soql-optimizer/</span>
+    │       └── <span style="color:#E8F4FF">SKILL.md</span>
+    ├── <span style="color:#06A59A">agents/</span>  <span style="color:#3A6A9A">← specialist subagents</span>
+    │   ├── <span style="color:#E8F4FF">apex-reviewer.md</span>
+    │   └── <span style="color:#E8F4FF">test-generator.md</span>
+    ├── <span style="color:#FF6B6B">hooks/</span>  <span style="color:#3A6A9A">← event scripts</span>
+    │   ├── <span style="color:#E8F4FF">block-dml-in-loops.py</span>
+    │   └── <span style="color:#E8F4FF">auto-run-tests.sh</span>
+    └── <span style="color:#1B96FF">plugins/</span>  <span style="color:#3A6A9A">← installed bundles</span>
+    </div>
+    <div class="tree">
+<span style="color:#7AAFDD;font-weight:600">~/.claude/</span>  <span style="color:#3A6A9A">← personal, never committed</span>
+├── <span style="color:#E8F4FF">CLAUDE.md</span>  <span style="color:#3A6A9A">← global preferences</span>
+├── <span style="color:#E8F4FF">settings.json</span>  <span style="color:#3A6A9A">← personal settings</span>
+├── <span style="color:#FFB75E">commands/</span>  <span style="color:#3A6A9A">← personal /user:cmds</span>
+├── <span style="color:#FF6EC7">skills/</span>   <span style="color:#3A6A9A">← personal skills</span>
+├── <span style="color:#06A59A">agents/</span>   <span style="color:#3A6A9A">← personal agents</span>
+└── <span style="color:#7AAFDD">projects/</span>  <span style="color:#3A6A9A">← auto-memory + sessions</span>
+    └── <span style="color:var(--sf-sky)">-Users-srini-salesforce-proj/</span>
+        ├── <span style="color:#E8F4FF">MEMORY.md</span>
+        ├── <span style="color:#E8F4FF">apex_patterns.md</span>
+        └── <span style="color:#E8F4FF">session-2026-05-07.jsonl</span>
+
+<span style="color:#3A6A9A">── config precedence (highest → lowest) ──</span>
+<span style="color:#FF6B6B">Managed (Enterprise)</span>
+  → <span style="color:#FFB75E">Project .claude/settings.json</span>
+    → <span style="color:#E8F4FF">User ~/.claude/settings.json</span>
+      → <span style="color:#3A6A9A">Local settings.local.json</span>
+<span style="color:#3A6A9A">deny rules ALWAYS win regardless of level</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ MEMORY ══════════════ -->
+<section id="memory">
+  <div class="sec-label" style="color:#B49FE8">1 — Memory</div>
+  <div class="sec-title">CLAUDE.md + rules/ — the always-on brain</div>
+  <div class="sec-sub">Loaded at every session. Tells Claude who you are, what your project does, and what rules to follow — so you never repeat yourself.</div>
+
+  <div class="grid g2">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 CLAUDE.md — root project memory</div>
+      <div class="code"><span class="c-comment"># Acme Corp — Salesforce Org (Production)</span>
+<span class="c-key">Org alias:</span> <span class="c-val">acme-prod</span>
+<span class="c-key">API version:</span> <span class="c-val">61.0</span>
+<span class="c-key">SFDX root:</span> <span class="c-val">force-app/main/default/</span>
+
+<span class="c-comment">## Non-negotiable rules</span>
+- Never put SOQL or DML inside for-loops
+- Always use USER_MODE in SOQL queries
+- Minimum 85% test coverage on all Apex
+- Deploy cmd: sf project deploy start
+
+<span class="c-comment">## Folder conventions</span>
+- Apex classes → classes/
+- Flows        → flows/
+- LWC          → lwc/
+- Triggers     → triggers/</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📂 rules/apex.md — path-scoped (*.cls only)</div>
+      <div class="code"><span class="c-tag">---</span>
+<span class="c-key">paths:</span> <span class="c-str">["force-app/**/*.cls"]</span>
+<span class="c-tag">---</span>
+
+<span class="c-comment">## Apex-specific (loads only for .cls files)</span>
+- Bulkify: handle 200+ records always
+- Use TestDataFactory in @isTest classes
+- Wrap all DML in try/catch blocks
+- @AuraEnabled(cacheable=true) only
+  for read-only methods
+- Naming: ClassNameService.cls, not Util
+- No hardcoded Org IDs or Record Types
+- Use Custom Metadata, not Custom Settings</div>
+      <div style="font-size:11px;color:var(--dim);margin-top:8px;padding:6px 10px;background:rgba(255,183,94,.06);border:1px solid rgba(255,183,94,.2);border-radius:6px">⚡ Rules only activate when Claude opens a matching file — keeps CLAUDE.md under 200 lines</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ TOOLS ══════════════ -->
+<section id="tools">
+  <div class="sec-label" style="color:var(--pink)">2 — Tools</div>
+  <div class="sec-title">Built-in physical capabilities</div>
+  <div class="sec-sub">Tools are pre-installed Claude Code abilities. No files to create. Claude decides automatically which tools to use. You control what's allowed via settings.json.</div>
+
+  <div class="grid g4">
+    <div class="card bg-sf"><div class="card-icon" style="background:rgba(27,150,255,.2)">📖</div><h3>Read / Write</h3><p>Read Apex classes, write Flow XML, edit trigger handlers, modify metadata files</p></div>
+    <div class="card bg-pink" style="background:rgba(255,110,199,.08)"><div class="card-icon" style="background:rgba(255,110,199,.2)">💻</div><h3>Bash</h3><p>Run sf CLI commands, sf apex run test, sf project deploy, git operations</p></div>
+    <div class="card bg-teal"><div class="card-icon" style="background:rgba(6,165,154,.2)">🔍</div><h3>Grep / Glob</h3><p>Scan all triggers for SOQL in loops, find all LWC components, search metadata</p></div>
+    <div class="card bg-gold"><div class="card-icon" style="background:rgba(255,183,94,.2)">✏️</div><h3>Edit / MultiEdit</h3><p>Refactor multiple Apex classes at once, patch Flow XML, bulk-update metadata</p></div>
+    <div class="card bg-cl"><div class="card-icon" style="background:rgba(123,94,167,.2)">🌐</div><h3>WebFetch</h3><p>Pull Salesforce API docs, check release notes, fetch WSDL schemas on demand</p></div>
+    <div class="card" style="border-color:rgba(6,165,154,.4)"><div class="card-icon" style="background:rgba(6,165,154,.2)">🤖</div><h3>Agent</h3><p>Spawn specialist subagents defined in .claude/agents/ with their own isolated context</p></div>
+    <div class="card bg-gray"><div class="card-icon" style="background:rgba(58,106,154,.2)">🔧</div><h3>TodoWrite</h3><p>Create task checklists for complex multi-step Salesforce deployments or refactors</p></div>
+    <div class="card bg-sf"><div class="card-icon" style="background:rgba(27,150,255,.2)">📋</div><h3>WebSearch</h3><p>Search Salesforce help, Trailhead, Stack Exchange for solutions and examples</p></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ COMMANDS ══════════════ -->
+<section id="commands">
+  <div class="sec-label" style="color:var(--gold)">3 — Commands</div>
+  <div class="sec-title">Slash commands — you call, Claude executes</div>
+  <div class="sec-sub">Single .md files in .claude/commands/. Filename = slash command. You trigger them manually. Use $ARGUMENTS to pass parameters at call time.</div>
+
+  <div class="grid g2">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 .claude/commands/deploy.md → <span style="color:var(--gold)">/deploy</span></div>
+      <div class="code"><span class="c-comment">Deploy current changes to a Salesforce org.</span>
+<span class="c-comment">Target org: $ARGUMENTS (default: acme-prod)</span>
+
+1. Generate manifest:
+   sf project generate manifest \
+     --output-dir manifest \
+     --from-org $ARGUMENTS
+
+2. Deploy:
+   sf project deploy start \
+     --manifest manifest/package.xml \
+     --target-org $ARGUMENTS
+
+3. Verify deployment status
+4. List deployed components
+5. If failure: show error + suggest fix</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 .claude/commands/run-tests.md → <span style="color:var(--gold)">/run-tests</span></div>
+      <div class="code"><span class="c-comment">Run Apex tests for the $ARGUMENTS class.</span>
+
+sf apex run test \
+  --class-names "$ARGUMENTS" \
+  --code-coverage \
+  --result-format human \
+  --target-org acme-prod
+
+Report:
+- Overall coverage %
+- Per-method coverage
+- Failed tests with stack trace
+- Suggest fixes if tests fail</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 .claude/commands/soql.md → <span style="color:var(--gold)">/soql</span></div>
+      <div class="code"><span class="c-comment">Run a SOQL query: $ARGUMENTS</span>
+
+sf data query \
+  --query "$ARGUMENTS" \
+  --target-org acme-prod
+
+- Format results as a table
+- Flag missing indexes
+- Warn if query returns > 10k rows
+- Suggest optimizations</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 .claude/commands/retrieve.md → <span style="color:var(--gold)">/retrieve</span></div>
+      <div class="code"><span class="c-comment">Retrieve $ARGUMENTS metadata from org.</span>
+
+sf project retrieve start \
+  --metadata "$ARGUMENTS" \
+  --target-org acme-prod \
+  --output-dir force-app/
+
+After retrieval:
+- List files changed
+- Show git diff summary
+- Flag any schema changes</div>
+    </div>
+  </div>
+
+  <div class="flow-wrap" style="margin-top:24px">
+    <div class="flow-node" style="background:rgba(255,183,94,.1);border-color:rgba(255,183,94,.4);color:var(--gold)">You type<br>/deploy acme-prod</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">Claude reads<br>deploy.md</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node active">Injects<br>$ARGUMENTS</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node teal">Runs sf CLI<br>commands</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node purple">Reports<br>result</div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ SKILLS ══════════════ -->
+<section id="skills">
+  <div class="sec-label" style="color:var(--pink)">4 — Skills</div>
+  <div class="sec-title">Auto-triggered expertise packages</div>
+  <div class="sec-sub">Skills are FOLDERS with a SKILL.md inside. Unlike commands (you call), Claude automatically detects when a skill is relevant and loads it. Skills can also bundle scripts and reference docs.</div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📂 skills/apex-best-practices/SKILL.md</div>
+      <div class="code"><span class="c-tag">---</span>
+<span class="c-key">name:</span> <span class="c-val">apex-best-practices</span>
+<span class="c-key">description:</span> <span class="c-str">Apply when writing or reviewing
+  any Apex code for Salesforce</span>
+<span class="c-tag">---</span>
+
+<span class="c-comment">## Bulkification</span>
+- Always handle 200+ records in triggers
+- Use List/Map collections, never loop SOQL
+- One SOQL query before the loop, not inside
+
+<span class="c-comment">## Security (CRUD/FLS)</span>
+- USER_MODE on ALL SOQL queries
+- Use bind variables — no string concat
+
+<span class="c-comment">## Tests</span>
+- TestDataFactory for all test data
+- @isTest(SeeAllData=false) always
+- Assert on specific field values</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📂 skills/soql-optimizer/SKILL.md</div>
+      <div class="code"><span class="c-tag">---</span>
+<span class="c-key">name:</span> <span class="c-val">soql-optimizer</span>
+<span class="c-key">description:</span> <span class="c-str">Apply when writing SOQL queries
+  or reviewing data access patterns</span>
+<span class="c-tag">---</span>
+
+<span class="c-comment">## Query best practices</span>
+- Filter on indexed fields first
+  (Id, Name, ExternalId__c, lookups)
+- Specify only needed fields — no SELECT *
+- LIMIT on large objects (Account, Contact)
+- Use relationship queries over multiple
+  single-object queries
+
+<span class="c-comment">## Anti-patterns to catch</span>
+- SOQL inside Apex for-loops → BLOCK
+- Missing WHERE on large objects
+- Non-selective queries on 100k+ records</div>
+    </div>
+  </div>
+
+  <div style="background:rgba(255,110,199,.06);border:1px solid rgba(255,110,199,.3);border-radius:var(--r);padding:16px 20px;display:flex;gap:16px;align-items:flex-start">
+    <div style="font-size:24px;flex-shrink:0">💡</div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:var(--pink);margin-bottom:4px">Commands vs Skills — the key difference</div>
+      <div style="font-size:13px;color:var(--muted)"><strong style="color:var(--text)">Commands</strong> = you explicitly type /command-name to run them.<br><strong style="color:var(--text)">Skills</strong> = Claude reads the task context, recognizes a match to the skill's description, and loads it automatically — you never have to invoke it.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ AGENTS ══════════════ -->
+<section id="agents">
+  <div class="sec-label" style="color:#5DCAA5">5 — Agents</div>
+  <div class="sec-title">Specialist subagents — isolated context windows</div>
+  <div class="sec-sub">Markdown files in .claude/agents/ with YAML frontmatter. Claude spawns them in a separate isolated context when the task matches. They do heavy work without polluting your main session.</div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 agents/apex-reviewer.md</div>
+      <div class="code"><span class="c-tag">---</span>
+<span class="c-key">name:</span> <span class="c-val">apex-reviewer</span>
+<span class="c-key">description:</span> <span class="c-str">Expert Apex code reviewer.
+  Invoke when reviewing trigger handlers,
+  service classes, or before PR merges.</span>
+<span class="c-key">model:</span> <span class="c-val">sonnet</span>
+<span class="c-key">tools:</span> <span class="c-val">Read, Grep, Glob</span>
+<span class="c-tag">---</span>
+You are a senior Salesforce developer
+reviewing Apex code.
+
+Check for:
+1. SOQL/DML inside for-loops
+2. Missing CRUD/FLS enforcement
+3. Governor limit risks (heap, CPU)
+4. Test coverage gaps
+5. Naming convention violations
+
+Return: severity-rated report
+  (High / Medium / Low per issue)</div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 agents/test-generator.md</div>
+      <div class="code"><span class="c-tag">---</span>
+<span class="c-key">name:</span> <span class="c-val">test-generator</span>
+<span class="c-key">description:</span> <span class="c-str">Generates Apex test classes.
+  Invoke when asked to write tests for a
+  new Apex class or trigger.</span>
+<span class="c-key">model:</span> <span class="c-val">sonnet</span>
+<span class="c-key">tools:</span> <span class="c-val">Read, Write, Bash</span>
+<span class="c-tag">---</span>
+1. Read the target Apex class fully
+2. Identify all methods + branches
+3. Write @isTest class with
+   TestDataFactory
+4. Target 90%+ code coverage
+5. Deploy with:
+   sf apex run test --class-names X
+6. Report: coverage % + any failures</div>
+    </div>
+  </div>
+
+  <div class="grid g3">
+    <div class="card bg-teal glow-cl">
+      <h3>🔒 Isolated Context</h3>
+      <p>Agent work happens in its own context window. Thousands of tokens of intermediate exploration never reach your main session.</p>
+    </div>
+    <div class="card bg-coral">
+      <h3>🎯 Tool Restrictions</h3>
+      <p>apex-reviewer only has Read/Grep/Glob — it cannot write files. test-generator gets Write. Minimal footprint by design.</p>
+    </div>
+    <div class="card bg-cl">
+      <h3>🤝 Report Back</h3>
+      <p>Agent completes its task, compresses findings, and returns a clean summary to your main session. No context bloat.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ HOOKS ══════════════ -->
+<section id="hooks">
+  <div class="sec-label" style="color:#FF6B6B">6 — Hooks</div>
+  <div class="sec-title">Deterministic event automation — the enforcer layer</div>
+  <div class="sec-sub">Hooks fire at specific lifecycle events and run shell scripts, prompts, or HTTP calls. Unlike skills or CLAUDE.md, hooks are <strong>deterministic — the model cannot skip them.</strong> Exit code 2 blocks any action, always.</div>
+
+  <div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);border-radius:var(--r);padding:16px 20px;margin-bottom:20px;display:flex;gap:12px">
+    <div style="font-size:22px">⚡</div>
+    <div style="font-size:13px;color:var(--muted)"><strong style="color:#FF6B6B">CLAUDE.md rules are advisory.</strong> Hooks are enforced. A CLAUDE.md rule saying "never deploy to production without tests" can be forgotten. A PreToolUse hook that exits 2 when it detects that pattern <strong style="color:var(--text)">will block it every single time</strong>, even in --dangerously-skip-permissions mode.</div>
+  </div>
+
+  <div style="font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px">All hook event types</div>
+  <div class="hook-grid">
+    <div class="hook-card" style="border-color:rgba(255,107,107,.4)">
+      <div class="hname" style="color:#FF6B6B">PreToolUse</div>
+      <div class="hdesc">Fires BEFORE a tool runs. Can inspect and block. Most powerful event.</div>
+      <span class="htag can-block">⛔ CAN BLOCK</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(6,165,154,.4)">
+      <div class="hname" style="color:#5DCAA5">PostToolUse</div>
+      <div class="hdesc">Fires AFTER tool completes. Perfect for auto-formatting, running tests, logging.</div>
+      <span class="htag reactive">✅ REACTIVE</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(255,183,94,.4)">
+      <div class="hname" style="color:var(--gold)">PostToolUseFailure</div>
+      <div class="hdesc">Fires when a tool fails. Inject context to help Claude diagnose and retry.</div>
+      <span class="htag notify">⚠️ ON ERROR</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(123,94,167,.4)">
+      <div class="hname" style="color:#B49FE8">UserPromptSubmit</div>
+      <div class="hdesc">Fires when you submit a prompt, before Claude processes it. Enrich or validate input.</div>
+      <span class="htag subagent">📝 PRE-PROMPT</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(27,150,255,.4)">
+      <div class="hname" style="color:var(--sf-sky)">Stop</div>
+      <div class="hdesc">Fires when the main agent finishes. QA checks, final validation, notifications.</div>
+      <span class="htag reactive">🏁 ON FINISH</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(6,165,154,.4)">
+      <div class="hname" style="color:#5DCAA5">SubagentStop</div>
+      <div class="hdesc">Fires when a subagent completes. Cleanup or validation after agent tasks.</div>
+      <span class="htag subagent">🤖 SUBAGENT</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(255,183,94,.4)">
+      <div class="hname" style="color:var(--gold)">Notification</div>
+      <div class="hdesc">Fires when Claude needs attention. Route alerts to Slack, email, or desktop.</div>
+      <span class="htag notify">🔔 ALERT</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(255,107,107,.4)">
+      <div class="hname" style="color:#FF6B6B">PermissionRequest</div>
+      <div class="hdesc">Fires at permission dialogs. Auto-approve safe patterns, deny risky ones.</div>
+      <span class="htag can-block">🔐 GATING</span>
+    </div>
+    <div class="hook-card" style="border-color:rgba(58,106,154,.4)">
+      <div class="hname" style="color:#7AAFDD">SessionEnd</div>
+      <div class="hdesc">Fires on session termination. Generate summaries, persist state, cleanup.</div>
+      <span class="htag notify">🌙 TEARDOWN</span>
+    </div>
+  </div>
+
+  <div style="margin-top:20px">
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">⚙️ settings.json — Salesforce hooks configuration</div>
+    <div class="code">{
+  <span class="c-str">"hooks"</span>: {
+    <span class="c-comment">// BLOCK: Never deploy to production without tests</span>
+    <span class="c-str">"PreToolUse"</span>: [{
+      <span class="c-key">"matcher"</span>: <span class="c-str">"Bash"</span>,
+      <span class="c-key">"hooks"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"command"</span>,
+        <span class="c-key">"command"</span>: <span class="c-str">"python3 .claude/hooks/block-prod-without-tests.py"</span> }]
+    }],
+    <span class="c-comment">// REACT: Auto-run Apex tests after any .cls edit</span>
+    <span class="c-str">"PostToolUse"</span>: [{
+      <span class="c-key">"matcher"</span>: <span class="c-str">"Write|Edit"</span>,
+      <span class="c-key">"hooks"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"command"</span>,
+        <span class="c-key">"command"</span>: <span class="c-str">"bash .claude/hooks/auto-run-apex-tests.sh"</span> }]
+    }],
+    <span class="c-comment">// VALIDATE: Prompt-based QA check before Claude stops</span>
+    <span class="c-str">"Stop"</span>: [{
+      <span class="c-key">"hooks"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"prompt"</span>,
+        <span class="c-key">"prompt"</span>: <span class="c-str">"Check: deployment verified, tests passing, coverage met?"</span> }]
+    }],
+    <span class="c-comment">// NOTIFY: Slack alert when Claude needs input</span>
+    <span class="c-str">"Notification"</span>: [{
+      <span class="c-key">"hooks"</span>: [{ <span class="c-key">"type"</span>: <span class="c-str">"command"</span>,
+        <span class="c-key">"command"</span>: <span class="c-str">"curl -s -X POST $SLACK_WEBHOOK -d '{\"text\":\"Claude needs input\"}}'"</span> }]
+    }]
+  }
+}</div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">🐍 block-prod-without-tests.py (PreToolUse)</div>
+      <div class="code">import json, sys
+data = json.load(sys.stdin)
+cmd = data.get("tool_input",{}).get("command","")
+
+<span class="c-comment"># Block deploy to prod without running tests</span>
+if "acme-prod" in cmd and "--no-tests" in cmd:
+    sys.stderr.write(
+      "BLOCKED: Cannot deploy to production "
+      "without running tests first.\n"
+      "Remove --no-tests flag.")
+    sys.exit(<span class="c-val">2</span>)  <span class="c-comment"># 2 = block the action</span>
+
+sys.exit(<span class="c-val">0</span>)      <span class="c-comment"># 0 = allow</span></div>
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">🔢 Exit code semantics</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#FF6B6B">Exit 2 → BLOCK</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Stops the tool from executing. Claude sees stderr as an error message and adjusts its plan.</div>
+        </div>
+        <div style="background:rgba(6,165,154,.1);border:1px solid rgba(6,165,154,.3);border-radius:8px;padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:#5DCAA5">Exit 0 → ALLOW</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Hook succeeded. Tool execution proceeds normally.</div>
+        </div>
+        <div style="background:rgba(255,183,94,.1);border:1px solid rgba(255,183,94,.3);border-radius:8px;padding:10px 14px">
+          <div style="font-size:13px;font-weight:700;color:var(--gold)">Exit 1 → WARNING</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Non-blocking error. Action still proceeds. Warning shown to user only.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ MCP ══════════════ -->
+<section id="mcp">
+  <div class="sec-label" style="color:var(--sf-sky)">7 — MCP Servers</div>
+  <div class="sec-title">Connect Claude to your live Salesforce org and beyond</div>
+  <div class="sec-sub">MCP (Model Context Protocol) gives Claude real-time access to external systems — your Salesforce org, GitHub, JIRA, databases, web search. Configured in .mcp.json at project root (committed to git).</div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">📄 .mcp.json (project root — committed to git)</div>
+      <div class="code">{
+  <span class="c-str">"mcpServers"</span>: {
+    <span class="c-str">"salesforce"</span>: {
+      <span class="c-key">"type"</span>: <span class="c-str">"stdio"</span>,
+      <span class="c-key">"command"</span>: <span class="c-str">"npx"</span>,
+      <span class="c-key">"args"</span>: [<span class="c-str">"-y"</span>, <span class="c-str">"@salesforce/mcp-server"</span>],
+      <span class="c-key">"env"</span>: {
+        <span class="c-str">"SF_ORG_ALIAS"</span>: <span class="c-str">"acme-prod"</span>,
+        <span class="c-str">"SF_ACCESS_TOKEN"</span>: <span class="c-str">"${SF_ACCESS_TOKEN}"</span>
+      }
+    },
+    <span class="c-str">"github"</span>: {
+      <span class="c-key">"type"</span>: <span class="c-str">"http"</span>,
+      <span class="c-key">"url"</span>: <span class="c-str">"https://api.github.com/mcp/"</span>,
+      <span class="c-key">"env"</span>: { <span class="c-str">"GITHUB_TOKEN"</span>: <span class="c-str">"${GITHUB_TOKEN}"</span> }
+    },
+    <span class="c-str">"jira"</span>: {
+      <span class="c-key">"type"</span>: <span class="c-str">"stdio"</span>,
+      <span class="c-key">"command"</span>: <span class="c-str">"npx"</span>,
+      <span class="c-key">"args"</span>: [<span class="c-str">"-y"</span>, <span class="c-str">"@atlassian/jira-mcp"</span>],
+      <span class="c-key">"env"</span>: { <span class="c-str">"JIRA_API_TOKEN"</span>: <span class="c-str">"${JIRA_TOKEN}"</span> }
+    }
+  }
+}</div>
+    </div>
+    <div class="grid" style="grid-template-rows:auto auto;gap:10px">
+      <div class="card bg-sf glow-sf">
+        <h3>🏢 Salesforce MCP</h3>
+        <p>Claude gets tools: <code style="color:var(--sf-sky)">sf_query_records</code>, <code style="color:var(--sf-sky)">sf_deploy_metadata</code>, <code style="color:var(--sf-sky)">sf_run_tests</code>, <code style="color:var(--sf-sky)">sf_get_object_fields</code> — direct access to your live org data and schema.</p>
+      </div>
+      <div class="card bg-cl glow-cl">
+        <h3>🎫 JIRA MCP</h3>
+        <p>Claude reads the JIRA ticket, implements the feature, updates ticket status, creates PR, and links it back — the full workflow from a single prompt: <em style="color:#B49FE8">"build ticket SF-123"</em>.</p>
+      </div>
+      <div class="card bg-teal">
+        <h3>🐙 GitHub MCP</h3>
+        <p>Create branches, open PRs, read issues, trigger CI/CD — all from Claude's context, grounded in your Salesforce code changes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ SETTINGS ══════════════ -->
+<section id="settings">
+  <div class="sec-label" style="color:#7AAFDD">8 — settings.json</div>
+  <div class="sec-title">The permission and policy layer</div>
+  <div class="sec-sub">Controls exactly what Claude can and cannot do. Deny rules always win. Committed to git for team-wide enforcement. settings.local.json holds personal overrides (gitignored).</div>
+
+  <div class="grid g2">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">⚙️ .claude/settings.json</div>
+      <div class="code">{
+  <span class="c-key">"$schema"</span>: <span class="c-str">"https://json.schemastore.org/..."</span>,
+  <span class="c-key">"model"</span>: <span class="c-str">"claude-sonnet-4-6"</span>,
+  <span class="c-key">"permissions"</span>: {
+    <span class="c-key">"allow"</span>: [
+      <span class="c-str">"Bash(sf project deploy start *)"</span>,
+      <span class="c-str">"Bash(sf apex run test *)"</span>,
+      <span class="c-str">"Bash(sf data query *)"</span>,
+      <span class="c-str">"Bash(git add * &amp;&amp; git commit *)"</span>,
+      <span class="c-str">"Read(force-app/**)"</span>,
+      <span class="c-str">"Write(force-app/**)"</span>
+    ],
+    <span class="c-key">"deny"</span>: [
+      <span class="c-str">"Bash(sf org delete *)"</span>,
+      <span class="c-str">"Bash(rm -rf *)"</span>,
+      <span class="c-str">"Read(.env)"</span>,
+      <span class="c-str">"Read(./secrets/**)"</span>
+    ]
+  },
+  <span class="c-key">"env"</span>: {
+    <span class="c-str">"SF_ORG_ALIAS"</span>: <span class="c-str">"acme-prod"</span>
+  }
+}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.3);border-radius:var(--r-sm);padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:#FF6B6B;margin-bottom:4px">⛔ Deny (always wins)</div>
+        <div style="font-size:12px;color:var(--muted)">If a command matches a deny rule, it's blocked — regardless of any allow rule at any scope level. Deny is absolute.</div>
+      </div>
+      <div style="background:rgba(6,165,154,.08);border:1px solid rgba(6,165,154,.3);border-radius:var(--r-sm);padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:#5DCAA5;margin-bottom:4px">✅ Allow (pre-approved)</div>
+        <div style="font-size:12px;color:var(--muted)">Matching commands run without a permission prompt. Build this list gradually by accepting recurring prompts.</div>
+      </div>
+      <div style="background:rgba(255,183,94,.08);border:1px solid rgba(255,183,94,.3);border-radius:var(--r-sm);padding:12px 14px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:4px">❓ Ask (middle ground)</div>
+        <div style="font-size:12px;color:var(--muted)">Anything not in allow or deny → Claude asks before proceeding. Safe default for new commands.</div>
+      </div>
+      <div style="font-size:11px;color:var(--dim);padding:6px 10px;background:rgba(27,150,255,.04);border:1px solid rgba(27,150,255,.15);border-radius:6px">Pro tip: start with a minimal settings.json and let Claude prompt you. Add to allow list as you identify safe recurring commands.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ PLUGINS ══════════════ -->
+<section id="plugins">
+  <div class="sec-label" style="color:var(--sf-sky)">9 — Plugins</div>
+  <div class="sec-title">Packaged bundles — install once, share team-wide</div>
+  <div class="sec-sub">A plugin packages commands, agents, skills, hooks, and MCP servers into one installable unit. Install with claude plugin install. Use --scope project to share via git.</div>
+
+  <div class="grid g2">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">💻 Installing a Salesforce DX plugin</div>
+      <div class="code"><span class="c-comment"># Install for entire team (shared via git)</span>
+claude plugin install salesforce-dx@marketplace \
+  --scope project
+
+<span class="c-comment"># What it adds automatically:</span>
+<span class="c-dir">commands/</span>  → /sf-deploy, /sf-retrieve,
+           /sf-test, /sf-describe-org
+<span class="c-dir">agents/</span>    → metadata-analyzer,
+           test-coverage-reporter
+<span class="c-dir">skills/</span>    → apex-patterns/,
+           lwc-standards/,
+           soql-optimizer/
+<span class="c-dir">hooks/</span>     → block-dml-loops.sh,
+           enforce-85pct-coverage.py</div>
+    </div>
+    <div class="grid" style="gap:10px">
+      <div class="card bg-sf"><h3>👥 Team Scope</h3><p>--scope project writes to .claude/settings.json and is committed to git. Every developer who clones the repo instantly gets all commands, agents, skills, and hooks.</p></div>
+      <div class="card bg-cl"><h3>👤 Personal Scope</h3><p>--scope local writes to gitignored settings.local.json. Personal plugins stay on your machine and don't affect teammates.</p></div>
+      <div class="card bg-teal"><h3>🌐 Global Scope</h3><p>--scope user (default) writes to ~/.claude/settings.json. Available across all your projects without committing anything.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ SUMMARY TABLE ══════════════ -->
+<section>
+  <div class="sec-label" style="color:var(--sf-sky)">Reference</div>
+  <div class="sec-title">All 9 concepts at a glance</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Concept</th><th>Location</th><th>Triggered by</th><th>Salesforce example</th><th>Can block?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td><span class="badge bg-cl">CLAUDE.md + rules</span></td><td>project root / rules/</td><td>Every session; rules = matching file</td><td>Org alias, deploy rules, apex.md for *.cls</td><td class="no">—</td></tr>
+        <tr><td>2</td><td><span class="badge bg-pink">Tools</span></td><td>Built-in (no files)</td><td>Claude decides automatically</td><td>Bash→sf CLI, Read→.cls, Grep→scan triggers</td><td class="no">via settings</td></tr>
+        <tr><td>3</td><td><span class="badge bg-gold">Commands</span></td><td>.claude/commands/*.md</td><td>You type /command-name</td><td>/deploy, /run-tests, /soql, /retrieve</td><td class="no">—</td></tr>
+        <tr><td>4</td><td><span class="badge bg-pink">Skills</span></td><td>.claude/skills/*/SKILL.md</td><td>Claude detects context match</td><td>apex-best-practices auto-loads on Apex tasks</td><td class="no">—</td></tr>
+        <tr><td>5</td><td><span class="badge bg-teal">Agents</span></td><td>.claude/agents/*.md</td><td>Claude spawns when task matches</td><td>apex-reviewer checks trigger before PR merge</td><td class="no">—</td></tr>
+        <tr><td>6</td><td><span class="badge bg-coral">Hooks</span></td><td>hooks/ + settings.json</td><td>Lifecycle events — ALWAYS fires</td><td>Block prod deploy w/o tests, auto-run tests after edit</td><td class="yes">YES (exit 2)</td></tr>
+        <tr><td>7</td><td><span class="badge bg-sf">MCP servers</span></td><td>.mcp.json (project root)</td><td>When Claude calls an MCP tool</td><td>sf_query_records, jira_get_issue, create_pr</td><td class="no">via hooks</td></tr>
+        <tr><td>8</td><td><span class="badge bg-gray">settings.json</span></td><td>.claude/settings.json</td><td>Every session — policy layer</td><td>allow:sf deploy, deny:sf org delete</td><td class="yes">YES (deny)</td></tr>
+        <tr><td>9</td><td><span class="badge bg-sf">Plugins</span></td><td>.claude/plugins/</td><td>Installed via claude plugin install</td><td>salesforce-dx bundles all of the above</td><td class="no">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ SCENARIOS ══════════════ -->
+<section id="scenarios">
+  <div class="sec-label" style="color:var(--gold)">Real-World Scenarios</div>
+  <div class="sec-title">End-to-end Salesforce automation examples</div>
+
+  <div class="scenario glow-sf">
+    <div class="scenario-num c-sf">Scenario 1 — Full Feature Deployment</div>
+    <h3>You: "Build JIRA ticket SF-247 and deploy to sandbox"</h3>
+    <div class="steps">
+      <div class="step"><div class="step-dot" style="background:rgba(27,150,255,.2);color:var(--sf-sky)">1</div><div class="step-text"><strong>MCP (JIRA)</strong> reads ticket SF-247 — feature: add Lead scoring field, validation rule, and flow</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,110,199,.2);color:var(--pink)">2</div><div class="step-text"><strong>Skill (apex-best-practices)</strong> auto-loads because Claude will write Apex validation</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(6,165,154,.2);color:#5DCAA5">3</div><div class="step-text"><strong>Tools (Write)</strong> creates LeadScoringService.cls, LeadScoringTrigger.cls, and Flow XML</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,107,107,.2);color:#FF6B6B">4</div><div class="step-text"><strong>Hook (PostToolUse)</strong> auto-triggers after Write → runs sf apex run test automatically</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(123,94,167,.2);color:#B49FE8">5</div><div class="step-text"><strong>Agent (test-generator)</strong> is spawned to write LeadScoringServiceTest.cls (90%+ coverage)</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,183,94,.2);color:var(--gold)">6</div><div class="step-text"><strong>Command /deploy</strong> runs sf project deploy start → deploys to sandbox org</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,107,107,.2);color:#FF6B6B">7</div><div class="step-text"><strong>Hook (PreToolUse)</strong> validates deploy command — allows sandbox, would block prod if --no-tests</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(27,150,255,.2);color:var(--sf-sky)">8</div><div class="step-text"><strong>MCP (JIRA + GitHub)</strong> updates ticket to "In Review", opens PR with deployment confirmation</div></div>
+    </div>
+  </div>
+
+  <div class="scenario glow-cl">
+    <div class="scenario-num c-cl">Scenario 2 — Code Review + Quality Gate</div>
+    <h3>You: "Review OpportunityTrigger.cls before merging"</h3>
+    <div class="steps">
+      <div class="step"><div class="step-dot" style="background:rgba(6,165,154,.2);color:#5DCAA5">1</div><div class="step-text"><strong>Agent (apex-reviewer)</strong> spawned in isolated context — reads trigger with Read/Grep/Glob only</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,110,199,.2);color:var(--pink)">2</div><div class="step-text"><strong>Skill (apex-best-practices)</strong> loaded into agent context — provides review criteria</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,107,107,.2);color:#FF6B6B">3</div><div class="step-text"><strong>Agent</strong> finds: SOQL in loop on line 47 (High), missing CRUD check on line 92 (High)</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,183,94,.2);color:var(--gold)">4</div><div class="step-text"><strong>Hook (Stop + prompt-type)</strong> validates: "Did Claude produce a severity-rated report with fixes?" — if No, forces continuation</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(27,150,255,.2);color:var(--sf-sky)">5</div><div class="step-text"><strong>Tools (Edit)</strong> applies fixes with refactored bulkified queries and added FLS checks</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(123,94,167,.2);color:#B49FE8">6</div><div class="step-text"><strong>Hook (Notification)</strong> sends Slack message: "OpportunityTrigger review complete — 2 issues fixed, ready to merge"</div></div>
+    </div>
+  </div>
+
+  <div class="scenario">
+    <div class="scenario-num" style="color:var(--gold)">Scenario 3 — Overnight Automated Org Audit</div>
+    <h3>You: "Audit the full org for governor limit risks tonight"</h3>
+    <div class="steps">
+      <div class="step"><div class="step-dot" style="background:rgba(27,150,255,.2);color:var(--sf-sky)">1</div><div class="step-text"><strong>Tools (Glob)</strong> discovers all 200 Apex trigger files in force-app/main/default/triggers/</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(6,165,154,.2);color:#5DCAA5">2</div><div class="step-text"><strong>Agent (apex-reviewer)</strong> spawned repeatedly in isolated forks — reviews each trigger batch independently</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,110,199,.2);color:var(--pink)">3</div><div class="step-text"><strong>Hook (SubagentStop)</strong> fires after each batch — logs findings to audit_report.md, keeps running tally</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,183,94,.2);color:var(--gold)">4</div><div class="step-text"><strong>MCP (Salesforce)</strong> queries org for actual execution stats to validate findings against real-world data</div></div>
+      <div class="step"><div class="step-dot" style="background:rgba(255,107,107,.2);color:#FF6B6B">5</div><div class="step-text"><strong>Hook (Stop)</strong> fires at completion — generates full PDF-ready audit report, sends email via Notification hook</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+  <div style="margin-bottom:8px;font-size:13px;color:var(--muted)">Salesforce × Claude — The Agentic Developer Stack</div>
+  <div>CLAUDE.md · rules/ · Tools · Commands · Skills · Agents · Hooks · MCP · settings.json · Plugins</div>
+  <div style="margin-top:8px">Built with Claude Code · Salesforce DX · Model Context Protocol</div>
+</footer>
+
+<script>
+// Smooth nav highlighting
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      navLinks.forEach(l => l.style.color = '');
+      const active = document.querySelector(`.nav a[href="#${e.target.id}"]`);
+      if(active) active.style.color = 'var(--sf-sky)';
+    }
+  });
+},{threshold:0.3});
+sections.forEach(s => obs.observe(s));
+
+// Subtle card hover glow
+document.querySelectorAll('.card').forEach(c => {
+  c.addEventListener('mouseenter', () => c.style.transform = 'translateY(-3px)');
+  c.addEventListener('mouseleave', () => c.style.transform = '');
+});
+</script>
+</body>
+</html>
