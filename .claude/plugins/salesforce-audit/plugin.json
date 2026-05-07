@@ -1,7 +1,7 @@
 {
   "name": "salesforce-audit",
-  "version": "0.2.0",
-  "description": "Org auditing, compliance, event monitoring, login history, user access review, and metadata security for Salesforce",
+  "version": "0.3.0",
+  "description": "Org auditing, compliance, event monitoring, login history, user access review, metadata security, connected app audit, user security, test coverage, and security posture for Salesforce",
   "agents": [
     "org-auditor",
     "org-scanner",
@@ -14,7 +14,11 @@
     "org-health-check",
     "metadata-audit",
     "setup-audit-trail",
-    "user-access-audit"
+    "user-access-audit",
+    "connected-apps-audit",
+    "user-security-audit",
+    "apex-test-coverage",
+    "org-security-posture"
   ],
   "commands": [
     "org-scan",
