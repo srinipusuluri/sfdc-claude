@@ -1,7 +1,7 @@
 {
   "name": "salesforce-audit",
-  "version": "0.3.0",
-  "description": "Org auditing, compliance, event monitoring, login history, user access review, metadata security, connected app audit, user security, test coverage, and security posture for Salesforce",
+  "version": "0.4.0",
+  "description": "Org auditing, compliance, event monitoring, login history, user access review, metadata security, connected app audit, user security, test coverage, security posture, API version drift, workflow migration, and PMD static analysis for Salesforce",
   "agents": [
     "org-auditor",
     "org-scanner",
@@ -18,14 +18,18 @@
     "connected-apps-audit",
     "user-security-audit",
     "apex-test-coverage",
-    "org-security-posture"
+    "org-security-posture",
+    "api-version-audit",
+    "workflow-migration",
+    "pmd-scan"
   ],
   "commands": [
     "org-scan",
     "audit-org",
     "audit-event-logs",
     "audit-login-history",
-    "security-review"
+    "security-review",
+    "pmd-scan"
   ],
   "hooks": [],
   "tools": [
