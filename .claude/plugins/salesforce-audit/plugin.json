@@ -1,12 +1,14 @@
 {
   "name": "salesforce-audit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Org auditing, compliance, event monitoring, login history, user access review, and metadata security for Salesforce",
   "agents": [
     "org-auditor",
+    "org-scanner",
     "security-reviewer"
   ],
   "skills": [
+    "governor-limits",
     "event-log-query",
     "login-history-query",
     "org-health-check",
@@ -15,6 +17,7 @@
     "user-access-audit"
   ],
   "commands": [
+    "org-scan",
     "audit-org",
     "audit-event-logs",
     "audit-login-history",
@@ -22,6 +25,7 @@
   ],
   "hooks": [],
   "tools": [
+    "org-scan.sh",
     "event-log-query.sh",
     "login-history-report.sh",
     "org-health-report.sh"
