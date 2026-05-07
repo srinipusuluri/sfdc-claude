@@ -17,16 +17,16 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUT="$REPORTS_DIR/pmd-findings-${TIMESTAMP}.html"
 DATE_HUMAN=$(date '+%B %d, %Y %H:%M UTC')
 
-# Find the SARIF file that was just written
 SARIF_FILE=$(echo "$COMMAND" | grep -oE '\-\-outfile [^ ]+' | awk '{print $2}' || echo "")
-[[ -z "$SARIF_FILE" ]] && SARIF_FILE=$(ls reports/*.sarif 2>/dev/null | sort -t- -k1 | tail -1 || echo "")
+[[ -z "$SARIF_FILE" ]] && SARIF_FILE=$(ls reports/*.sarif 2>/dev/null | tail -1 || echo "")
 
 FINDINGS_HTML=""
 TOTAL=0; CRITICAL=0; HIGH=0; MEDIUM=0; LOW=0
 
-if [[ -n "$SARIF_FILE" && -f "$SARIF_FILE" ]]; then
-  PARSED=$(python3 - "$SARIF_FILE" <<'PY'
-import sys, json, html
+# Write SARIF parser to a temp file — avoids heredoc-inside-$() bash parse error
+_PY=$(mktemp /tmp/pmd-sarif-XXXXXX.py)
+cat > "$_PY" << 'PY'
+import sys, json, html as h
 
 try:
     with open(sys.argv[1]) as f:
@@ -38,14 +38,12 @@ try:
     for run in sarif.get("runs", []):
         rules = {r["id"]: r for r in run.get("tool", {}).get("driver", {}).get("rules", [])}
         for result in run.get("results", []):
-            rule_id   = result.get("ruleId", "unknown")
-            rule_info = rules.get(rule_id, {})
-            rule_name = rule_info.get("name", rule_id)
-            message   = html.escape(result.get("message", {}).get("text", "")[:180])
-            severity  = result.get("properties", {}).get("severity", "").lower()
+            rule_id  = result.get("ruleId", "unknown")
+            message  = h.escape(result.get("message", {}).get("text", "")[:180])
+            severity = result.get("properties", {}).get("severity", "").lower()
             if not severity:
-                sev_level = result.get("level", "warning")
-                severity = {"error": "critical", "warning": "high", "note": "medium"}.get(sev_level, "low")
+                lvl = result.get("level", "warning")
+                severity = {"error": "critical", "warning": "high", "note": "medium"}.get(lvl, "low")
 
             locs = result.get("locations", [])
             if locs:
@@ -61,45 +59,50 @@ try:
             COLOR = {"critical": "#dc2626", "high": "#d97706", "medium": "#2563eb", "low": "#64748b"}.get(severity, "#64748b")
             BG    = {"critical": "#fef2f2", "high": "#fffbeb", "medium": "#eff6ff", "low": "#f8fafc"}.get(severity, "#f8fafc")
             LABEL = severity.upper()
+
             rows.append(
-                f'<tr style="background:{BG}">'
-                f'<td><span style="background:{COLOR};color:#fff;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:700">{LABEL}</span></td>'
-                f'<td style="font-family:monospace;font-size:.8rem">{html.escape(rule_id)}</td>'
-                f'<td style="font-size:.82rem">{html.escape(file_short)}</td>'
-                f'<td style="text-align:center">{line}</td>'
-                f'<td style="font-size:.8rem">{message}</td>'
-                f'</tr>'
+                '<tr style="background:' + BG + '">'
+                '<td><span style="background:' + COLOR + ';color:#fff;padding:2px 8px;border-radius:4px;'
+                'font-size:.72rem;font-weight:700">' + LABEL + '</span></td>'
+                '<td style="font-family:monospace;font-size:.8rem">' + h.escape(rule_id) + '</td>'
+                '<td style="font-size:.82rem">' + h.escape(file_short) + '</td>'
+                '<td style="text-align:center">' + str(line) + '</td>'
+                '<td style="font-size:.8rem">' + message + '</td>'
+                '</tr>'
             )
 
-    summary = f'{counts["total"]}|{counts["critical"]}|{counts["high"]}|{counts["medium"]}|{counts["low"]}'
+    summary = (str(counts["total"]) + '|' + str(counts.get("critical", 0)) + '|' +
+               str(counts.get("high", 0)) + '|' + str(counts.get("medium", 0)) + '|' +
+               str(counts.get("low", 0)))
     print(summary)
     print('\n'.join(rows))
 
 except Exception as e:
-    print(f"0|0|0|0|0")
-    print(f'<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8">Could not parse SARIF: {html.escape(str(e))}</td></tr>')
+    print('0|0|0|0|0')
+    print('<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8">Could not parse SARIF: ' + h.escape(str(e)) + '</td></tr>')
 PY
-  )
 
-  # First line is counts, rest is HTML rows
+if [[ -n "$SARIF_FILE" && -f "$SARIF_FILE" ]]; then
+  PARSED=$(python3 "$_PY" "$SARIF_FILE" 2>/dev/null || echo "0|0|0|0|0")
   SUMMARY_LINE=$(echo "$PARSED" | head -1)
   FINDINGS_HTML=$(echo "$PARSED" | tail -n +2)
   IFS='|' read -r TOTAL CRITICAL HIGH MEDIUM LOW <<< "$SUMMARY_LINE"
 fi
 
-# Badge
+rm -f "$_PY"
+
 if   [[ "$CRITICAL" -gt 0 ]]; then BADGE_COLOR="#dc2626"; BADGE_TEXT="CRITICAL FINDINGS"
 elif [[ "$HIGH"     -gt 0 ]]; then BADGE_COLOR="#d97706"; BADGE_TEXT="HIGH FINDINGS"
 elif [[ "$TOTAL"    -gt 0 ]]; then BADGE_COLOR="#2563eb"; BADGE_TEXT="FINDINGS PRESENT"
 else                                BADGE_COLOR="#16a34a"; BADGE_TEXT="CLEAN"
 fi
 
-cat > "$OUT" <<HTML
+cat > "$OUT" << HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PMD Findings Report — ${DATE_HUMAN}</title>
+<title>PMD Findings — ${DATE_HUMAN}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b}
@@ -120,7 +123,6 @@ cat > "$OUT" <<HTML
   th{padding:10px 14px;background:#f8fafc;font-size:.78rem;text-transform:uppercase;
      letter-spacing:.04em;color:#64748b;border-bottom:2px solid #e2e8f0}
   td{padding:8px 14px;border-bottom:1px solid #f1f5f9;vertical-align:top}
-  .source-file{font-size:.75rem;color:#94a3b8;font-family:monospace}
   footer{text-align:center;padding:20px;font-size:.75rem;color:#94a3b8}
 </style>
 </head>
@@ -132,7 +134,6 @@ cat > "$OUT" <<HTML
   </div>
   <div class="badge">${BADGE_TEXT}</div>
 </header>
-
 <div class="cards">
   <div class="card" style="border-top:4px solid #64748b">
     <div class="num">${TOTAL}</div><div class="label">Total</div>
@@ -150,7 +151,6 @@ cat > "$OUT" <<HTML
     <div class="num" style="color:#64748b">${LOW}</div><div class="label">Low</div>
   </div>
 </div>
-
 <section>
   <h2>Findings (sorted by severity)</h2>
   <table>
@@ -164,7 +164,6 @@ cat > "$OUT" <<HTML
     ${FINDINGS_HTML:-<tr><td colspan="5" style="text-align:center;padding:24px;color:#94a3b8">No SARIF file found — run /pmd-scan first</td></tr>}
   </table>
 </section>
-
 <footer>Generated by Claude Code salesforce-audit plugin &nbsp;|&nbsp; ${DATE_HUMAN}</footer>
 </body>
 </html>

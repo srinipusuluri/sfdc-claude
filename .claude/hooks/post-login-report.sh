@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# PostToolUse — runs after login-history-report.sh; generates HTML anomaly report
+# PostToolUse — runs after login-history queries; generates HTML anomaly report
 set -euo pipefail
 
 PAYLOAD=$(cat)
 COMMAND=$(printf '%s' "$PAYLOAD" | python3 -c \
   "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null || echo "")
 
-# Trigger on login-history script or LoginHistory SOQL queries
 if ! echo "$COMMAND" | grep -qiE "login-history-report\.sh|LoginHistory|VerificationHistory"; then
   exit 0
 fi
@@ -19,32 +18,27 @@ OUT="$REPORTS_DIR/login-anomaly-${TIMESTAMP}.html"
 DATE_HUMAN=$(date '+%B %d, %Y %H:%M UTC')
 ORG=$(echo "$COMMAND" | grep -oE '\-\-target-org [^ ]+' | awk '{print $2}' || echo "unknown")
 
-# Parse tool output (JSON) for login records
 TOOL_OUTPUT=$(printf '%s' "$PAYLOAD" | python3 -c \
   "import sys,json; d=json.load(sys.stdin); r=d.get('tool_response',{}); print(r.get('output','') or r.get('content',''))" \
   2>/dev/null || echo "")
 
-# Parse the JSON output from sf data query
-STATS=$(echo "$TOOL_OUTPUT" | python3 - <<'PY' 2>/dev/null || echo "0|0|0|0|0")
-import sys, json, re, html
+# Write login parser to a temp file — avoids heredoc-inside-$() bash parse error
+_PY=$(mktemp /tmp/login-parse-XXXXXX.py)
+cat > "$_PY" << 'PY'
+import sys, json, re, html as h
 
 raw = sys.stdin.read()
-
-# Try to extract JSON from the sf CLI output
 try:
-    # sf --json output is wrapped in {"status":0,"result":{"records":[...]}}
     m = re.search(r'\{.*\}', raw, re.DOTALL)
     data = json.loads(m.group()) if m else {}
     records = data.get('result', {}).get('records', [])
-except:
+except Exception:
     records = []
 
 total   = len(records)
-failed  = sum(1 for r in records if r.get('Status','').lower() not in ('success',''))
-new_countries = set()
-high_volume = {}  # user -> count
-
-rows_crit = []; rows_warn = []; rows_ok = []
+failed  = 0
+high_volume = {}
+rows_crit = []
 
 for r in records:
     status  = r.get('Status', '')
@@ -52,57 +46,58 @@ for r in records:
     ip      = r.get('SourceIp', '?')
     country = r.get('CountryIso', '')
     ltype   = r.get('LoginType', '')
-    ltime   = r.get('LoginTime', '')[:16] if r.get('LoginTime') else '?'
-    browser = r.get('Browser', r.get('Platform', ''))
-
-    esc_user = html.escape(str(user))
-    esc_ip   = html.escape(str(ip))
-    esc_st   = html.escape(str(status))
-    esc_lt   = html.escape(str(ltype))
+    ltime   = (r.get('LoginTime') or '')[:16]
 
     high_volume[user] = high_volume.get(user, 0) + 1
 
     if status.lower() not in ('success', ''):
+        failed += 1
         rows_crit.append(
-            f'<tr style="background:#fef2f2"><td>{esc_user}</td><td>{esc_ip}</td>'
-            f'<td style="color:#dc2626;font-weight:700">{esc_st}</td>'
-            f'<td>{esc_lt}</td><td>{html.escape(str(country))}</td></tr>'
+            '<tr style="background:#fef2f2">'
+            '<td>' + h.escape(str(user)) + '</td>'
+            '<td>' + h.escape(str(ip)) + '</td>'
+            '<td style="color:#dc2626;font-weight:700">' + h.escape(str(status)) + '</td>'
+            '<td>' + h.escape(str(ltime)) + '</td>'
+            '<td>' + h.escape(str(country)) + '</td>'
+            '</tr>'
         )
 
 success = total - failed
-# High-volume users (>5 logins today)
 hv_rows = []
 for u, cnt in sorted(high_volume.items(), key=lambda x: -x[1]):
     if cnt > 5:
-        hv_rows.append(f'<tr style="background:#fffbeb"><td>{html.escape(str(u))}</td>'
-                       f'<td style="font-weight:700;color:#d97706">{cnt}</td></tr>')
+        hv_rows.append(
+            '<tr style="background:#fffbeb">'
+            '<td>' + h.escape(str(u)) + '</td>'
+            '<td style="font-weight:700;color:#d97706">' + str(cnt) + '</td>'
+            '</tr>'
+        )
 
-summary_line = f'{total}|{success}|{failed}|{len(rows_crit)}|{len(hv_rows)}'
-crit_html  = '\n'.join(rows_crit)  or '<tr><td colspan="5" style="text-align:center;color:#16a34a;padding:12px">No failed logins found</td></tr>'
-hv_html    = '\n'.join(hv_rows)    or '<tr><td colspan="2" style="text-align:center;color:#16a34a;padding:12px">No high-volume users</td></tr>'
-
-print(summary_line)
+print(str(total) + '|' + str(success) + '|' + str(failed) + '|' + str(len(hv_rows)))
 print('---CRIT---')
-print(crit_html)
+print('\n'.join(rows_crit) if rows_crit else
+      '<tr><td colspan="5" style="text-align:center;color:#16a34a;padding:12px">No failed logins found</td></tr>')
 print('---HV---')
-print(hv_html)
+print('\n'.join(hv_rows) if hv_rows else
+      '<tr><td colspan="2" style="text-align:center;color:#16a34a;padding:12px">No high-volume users</td></tr>')
 PY
-)
 
-# Split output sections
+STATS=$(echo "$TOOL_OUTPUT" | python3 "$_PY" 2>/dev/null || echo "0|0|0|0")
+rm -f "$_PY"
+
 SUMMARY_LINE=$(echo "$STATS" | head -1)
 CRIT_ROWS=$(echo "$STATS"   | awk '/---CRIT---/{f=1;next} /---HV---/{f=0} f{print}')
 HV_ROWS=$(echo "$STATS"     | awk '/---HV---/{f=1;next} f{print}')
 
-IFS='|' read -r TOTAL SUCCESS FAILED ANOMALIES HV_COUNT <<< "$SUMMARY_LINE"
-TOTAL="${TOTAL:-0}"; SUCCESS="${SUCCESS:-0}"; FAILED="${FAILED:-0}"
+IFS='|' read -r TOTAL SUCCESS FAILED HV_COUNT <<< "$SUMMARY_LINE"
+TOTAL="${TOTAL:-0}"; SUCCESS="${SUCCESS:-0}"; FAILED="${FAILED:-0}"; HV_COUNT="${HV_COUNT:-0}"
 
-if   [[ "${FAILED:-0}" -gt 0 ]]; then BADGE_COLOR="#dc2626"; BADGE_TEXT="ANOMALIES DETECTED"
-elif [[ "${HV_COUNT:-0}" -gt 0 ]]; then BADGE_COLOR="#d97706"; BADGE_TEXT="WARNINGS"
-else                                    BADGE_COLOR="#16a34a"; BADGE_TEXT="CLEAN"
+if   [[ "$FAILED"   -gt 0 ]]; then BADGE_COLOR="#dc2626"; BADGE_TEXT="ANOMALIES DETECTED"
+elif [[ "$HV_COUNT" -gt 0 ]]; then BADGE_COLOR="#d97706"; BADGE_TEXT="WARNINGS"
+else                                BADGE_COLOR="#16a34a"; BADGE_TEXT="CLEAN"
 fi
 
-cat > "$OUT" <<HTML
+cat > "$OUT" << HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,7 +134,6 @@ cat > "$OUT" <<HTML
   </div>
   <div class="badge">${BADGE_TEXT}</div>
 </header>
-
 <div class="cards">
   <div class="card" style="border-top:4px solid #2563eb">
     <div class="num">${TOTAL}</div><div class="label">Total Logins</div>
@@ -151,10 +145,9 @@ cat > "$OUT" <<HTML
     <div class="num" style="color:#dc2626">${FAILED}</div><div class="label">Failed</div>
   </div>
   <div class="card" style="border-top:4px solid #d97706">
-    <div class="num" style="color:#d97706">${HV_COUNT:-0}</div><div class="label">High-Volume Users</div>
+    <div class="num" style="color:#d97706">${HV_COUNT}</div><div class="label">High-Volume Users</div>
   </div>
 </div>
-
 <section>
   <h2>🔴 Failed Logins</h2>
   <table>
@@ -162,7 +155,6 @@ cat > "$OUT" <<HTML
     ${CRIT_ROWS}
   </table>
 </section>
-
 <section>
   <h2>🟡 High-Volume Users (&gt;5 logins in window)</h2>
   <table>
@@ -170,7 +162,6 @@ cat > "$OUT" <<HTML
     ${HV_ROWS}
   </table>
 </section>
-
 <footer>Generated by Claude Code salesforce-audit plugin &nbsp;|&nbsp; ${DATE_HUMAN}</footer>
 </body>
 </html>

@@ -14,78 +14,88 @@ TIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 DATE_HUMAN=$(date '+%B %d, %Y')
 DATE_KEY=$(date '+%Y%m%d')
 
-# Extract session activity from transcript
-SUMMARY=""
+# Extract session activity from transcript using a temp Python file
+# (avoids heredoc-inside-$() which confuses bash on macOS)
+SUMMARY="no-activity"
 if [[ -n "$TRANSCRIPT" && -f "$TRANSCRIPT" ]]; then
-  SUMMARY=$(python3 - "$TRANSCRIPT" <<'PY' 2>/dev/null || echo "")
+  _PY=$(mktemp /tmp/stop-summary-XXXXXX.py)
+  cat > "$_PY" <<'PY'
 import sys, json
 
 transcript_path = sys.argv[1]
-edited = set(); tests_run = False; deploys = []; audits = []; soql = 0
+edited = set()
+tests_run = False
+deploys = []
+audits = []
+soql = 0
 
 try:
     with open(transcript_path) as f:
         for line in f:
             try:
                 entry = json.loads(line.strip())
-            except:
+            except Exception:
                 continue
-            # Tool calls
             content = entry.get("content", [])
-            if isinstance(content, list):
-                for block in content:
-                    if not isinstance(block, dict): continue
-                    if block.get("type") == "tool_use":
-                        name  = block.get("name", "")
-                        inp   = block.get("input", {})
-                        cmd   = inp.get("command", "")
-                        fpath = inp.get("file_path", "")
+            if not isinstance(content, list):
+                continue
+            for block in content:
+                if not isinstance(block, dict):
+                    continue
+                if block.get("type") != "tool_use":
+                    continue
+                name  = block.get("name", "")
+                inp   = block.get("input", {})
+                cmd   = inp.get("command", "")
+                fpath = inp.get("file_path", "")
 
-                        if name in ("Edit", "Write") and fpath:
-                            edited.add(fpath.split("/")[-1])
-                        if "sf apex run test" in cmd:
-                            tests_run = True
-                        if "sf project deploy" in cmd:
-                            target = ""
-                            parts = cmd.split()
-                            if "--target-org" in parts:
-                                idx = parts.index("--target-org")
-                                target = parts[idx + 1] if idx + 1 < len(parts) else ""
-                            deploys.append(target or "unknown")
-                        if "org-scan.sh" in cmd or "/org-scan" in cmd:
-                            audits.append("org-scan")
-                        if "sf data query" in cmd and "LoginHistory" in cmd:
-                            audits.append("login-history")
-                        if "sf data query" in cmd:
-                            soql += 1
+                if name in ("Edit", "Write") and fpath:
+                    edited.add(fpath.split("/")[-1])
+                if "sf apex run test" in cmd:
+                    tests_run = True
+                if "sf project deploy" in cmd:
+                    parts = cmd.split()
+                    target = ""
+                    if "--target-org" in parts:
+                        idx = parts.index("--target-org")
+                        target = parts[idx + 1] if idx + 1 < len(parts) else ""
+                    deploys.append(target or "unknown")
+                if "org-scan.sh" in cmd or "/org-scan" in cmd:
+                    audits.append("org-scan")
+                if "sf data query" in cmd and "LoginHistory" in cmd:
+                    audits.append("login-history")
+                if "sf data query" in cmd:
+                    soql += 1
+except Exception:
+    pass
 
 parts = []
-if edited:    parts.append(f"edited:{','.join(sorted(edited)[:5])}")
+if edited:    parts.append("edited:" + ",".join(sorted(edited)[:5]))
 if tests_run: parts.append("tests:run")
-if deploys:   parts.append(f"deploy:{','.join(deploys)}")
-if audits:    parts.append(f"audit:{','.join(set(audits))}")
-if soql:      parts.append(f"soql:{soql}queries")
+if deploys:   parts.append("deploy:" + ",".join(deploys))
+if audits:    parts.append("audit:" + ",".join(set(audits)))
+if soql:      parts.append("soql:" + str(soql) + "queries")
 print(" | ".join(parts) if parts else "no-tool-activity")
 PY
-  )
+  SUMMARY=$(python3 "$_PY" "$TRANSCRIPT" 2>/dev/null || echo "no-activity")
+  rm -f "$_PY"
 fi
 
-LOG_LINE="${TIMESTAMP} | ${SUMMARY:-no-activity}"
+LOG_LINE="${TIMESTAMP} | ${SUMMARY}"
 echo "$LOG_LINE" >> "$LOG_FILE"
 
-# Generate or update today's session summary HTML
-DAILY_HTML="${REPORTS_DIR}/session-${DATE_KEY}.html"
-
-# Collect today's log lines
-TODAY_LINES=$(grep "^${DATE_KEY}\|^${TIMESTAMP:0:10}" "$LOG_FILE" 2>/dev/null || echo "$LOG_LINE")
+# Collect today's log lines for HTML
+TODAY_LINES=$(grep "^${TIMESTAMP:0:10}" "$LOG_FILE" 2>/dev/null || echo "$LOG_LINE")
 
 ROWS=""
 while IFS= read -r line; do
   [[ -z "$line" ]] && continue
-  TS=$(echo "$line" | cut -d'|' -f1 | tr -d ' ')
+  TS=$(echo "$line"   | cut -d'|' -f1 | tr -d ' ')
   REST=$(echo "$line" | cut -d'|' -f2- | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
   ROWS="${ROWS}<tr><td style='color:#64748b;white-space:nowrap;font-family:monospace;font-size:.78rem'>${TS}</td><td>${REST}</td></tr>"
 done <<< "$TODAY_LINES"
+
+DAILY_HTML="${REPORTS_DIR}/session-${DATE_KEY}.html"
 
 cat > "$DAILY_HTML" <<HTML
 <!DOCTYPE html>
@@ -98,18 +108,11 @@ cat > "$DAILY_HTML" <<HTML
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;color:#1e293b;padding:32px}
   h1{font-size:1.3rem;font-weight:700;margin-bottom:4px}
   .sub{color:#64748b;font-size:.85rem;margin-bottom:24px}
-  table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;
-        border:1px solid #e2e8f0;overflow:hidden}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;border:1px solid #e2e8f0;overflow:hidden}
   th{padding:10px 16px;background:#f1f5f9;font-size:.78rem;text-transform:uppercase;
      letter-spacing:.04em;color:#475569;border-bottom:2px solid #e2e8f0;text-align:left}
   td{padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:.83rem;vertical-align:top}
   tr:last-child td{border-bottom:none}
-  .tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:.72rem;font-weight:600;margin:1px;
-       background:#e0f2fe;color:#0369a1}
-  .tag.edit{background:#f0fdf4;color:#166534}
-  .tag.deploy{background:#fef2f2;color:#991b1b}
-  .tag.audit{background:#fdf4ff;color:#7e22ce}
-  .tag.test{background:#fffbeb;color:#92400e}
   footer{margin-top:20px;font-size:.75rem;color:#94a3b8;text-align:center}
 </style>
 </head>
@@ -125,8 +128,6 @@ cat > "$DAILY_HTML" <<HTML
 </html>
 HTML
 
-# Print a brief summary to the transcript (visible to user)
 echo ""
 echo "📋 Session logged → ${LOG_FILE}"
-[[ -n "$EDITED_FILES" ]] && echo "   Files edited this session recorded"
-echo "   Daily summary → ${DAILY_HTML}"
+echo "   Daily summary  → ${DAILY_HTML}"
